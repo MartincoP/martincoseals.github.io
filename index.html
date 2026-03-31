@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMO Seal Calculator</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Babel for JSX compilation in browser -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Custom Tailwind Configuration for Premium Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0F172A', // slate-900 
+                            card: '#1E293B', // slate-800
+                            cardHover: '#334155', // slate-700
+                            border: '#334155', 
+                        },
+                        primary: '#3B82F6', // blue-500
+                        accent: '#F59E0B', // amber-500
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0F172A;
+            color: #E2E8F0; /* slate-200 */
+        }
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+
+        .style-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .style-scrollbar::-webkit-scrollbar-track {
+            background: #1E293B; 
+        }
+        .style-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen selection:bg-primary selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- DATA DOMAIN ---
+        const TIERS = [
+            { name: "Unopened", threshold: 0, percent: 0 },
+            { name: "Normal", threshold: 1, percent: 10 },
+            { name: "Bronze", threshold: 50, percent: 20 },
+            { name: "Silver", threshold: 200, percent: 40 },
+            { name: "Gold", threshold: 500, percent: 60 },
+            { name: "Platinum", threshold: 1000, percent: 80 },
+            { name: "Master", threshold: 3000, percent: 100 }
+        ];
+
+        const sealDatabase = [
+            // AT Seals
+            { name: "Guilmon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Devimon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Patamon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Giromon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Qinglongmon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Examon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Tanemon", statType: "AT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Mushroomon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Chrysalimon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Garurumon(Black)", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Cherrymon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Marin Devimon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Dexmon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Omegamon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Myotismon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Venom Vamdemon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Culumon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Orochimon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Monodramon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Megidramon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "10 year", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "MugenDramon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Chaosmon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "MirageGaogamon BurstMode", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "PassionateSeal", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Boltboutamon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "11 year Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Greymon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Alphamon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "ExV-mon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "ImperialDramon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Environment Guardian Seal", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Kuzuhamon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Silphymon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "PicoDevimon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "12th Anniversary Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "ImperialDramon Fighter Mode", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 300 },
+            { name: "Omegamon X", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 150 },
+            { name: "New Semester Seal", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Hawkmon", statType: "AT", baseValue: 10, maxValues: 100, maxSeals: 1000 },
+            { name: "Aquilamon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 1000 },
+            { name: "Turuiemon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 1000 },
+            { name: "Shurimon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 1000 },
+            { name: "Piccolomon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 700 },
+            { name: "Cres Garurumon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 500 },
+            { name: "Gankoomon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 500 },
+            { name: "Seal of summer", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Vegiemon Seal", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "MetalGreymon(Black) Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "13th Anniversary AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "BetelGammamon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Siriusmon", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Happy Christmas", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Blue Serpent Seal", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Dungeon Masters AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Season Pass AT Seal", statType: "AT", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "Dungeon Masters2 AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "[Awakening]Imperialdramon Paladin mode", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Takeru Takaishi Seal", statType: "AT", baseValue: 40, maxValues: 400, maxSeals: 100 },
+            { name: "Numemon", statType: "AT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "[Awakening]Ordinemon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Scorching Summer AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Greymon X", statType: "AT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "WarGreymon X", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "UlforceVeedramon X", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Gaioumon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Medievalgallantmon X", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Jesmon X", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Gankoomon X", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Agnimon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Gigasmon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Raguelmon", statType: "AT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Last Evolution: Kizuna", statType: "AT", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Autumn AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "16th AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Adventure AT Seal A", statType: "AT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Adventure AT Seal B", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Adventure AT Seal C", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Dungeon Masters3 AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Garbagemon", statType: "AT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Megadramon", statType: "AT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "SkullKnightmon", statType: "AT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Omnimon Alter-B", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Christmas AT Seal", statType: "AT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Life Reversal AT Seal", statType: "AT", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+
+            // CT Seals
+            { name: "Sharmamon", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Koromon", statType: "CT", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Kunemon", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Kyubimon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Togemon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Volcamon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Nanomon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "SaberLeomon", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "ChaosPiedmon", statType: "CT", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "Tylomon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Vajramon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Prince Mamemon", statType: "CT", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "CommanDramon", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "MetalGarurumon", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Omegamon Zwart", statType: "CT", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "RizeGreymon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Gaogamon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Lalamon", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Ravemon Burst Mode", statType: "CT", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "Phantomon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Jesmon", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "MagnaAngelmon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Conversion Seal", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "PawnChessmon B", statType: "CT", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "ShadowSeraphimon", statType: "CT", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "Hope Seal", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "ShoutmonX2", statType: "CT", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "Lucemon", statType: "CT", baseValue: 0.1, maxValues: 1, maxSeals: 700 },
+            { name: "Alphamon X", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 300 },
+            { name: "Alphamon Ouryuken X", statType: "CT", baseValue: 0.4, maxValues: 4, maxSeals: 150 },
+            { name: "Last Seal of 2023", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Kiwimon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 1000 },
+            { name: "Mamemon", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 700 },
+            { name: "Big Mamemon", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 500 },
+            { name: "AncientTroiamon", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 500 },
+            { name: "ShoutmonX7", statType: "CT", baseValue: 0.35, maxValues: 3.5, maxSeals: 400 },
+            { name: "Omegamon Merciful Mode", statType: "CT", baseValue: 0.5, maxValues: 5, maxSeals: 50 },
+            { name: "Deltamon Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "13th Anniversary CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "KausGammamon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Kuzuhamon Mikomode", statType: "CT", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "Dungeon Masters CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Season Pass CT Seal", statType: "CT", baseValue: 1, maxValues: 10, maxSeals: 3000 },
+            { name: "Dungeon Masters2 CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Eosmon", statType: "CT", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "Hikari Seal", statType: "CT", baseValue: 0.5, maxValues: 5, maxSeals: 100 },
+            { name: "DarknessBagramon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Greymon©", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Hot Summer CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Garurumon X", statType: "CT", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "MetalGarurumon X", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Magnamon X", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Minervamon X", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Craniamon X", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Vritramon", statType: "CT", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Chakmon", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Grottomon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "KaiserGreymon", statType: "CT", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Agumon -Bond of Courage-", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Autumn CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "16th CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Adventure CT Seal A", statType: "CT", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Adventure CT Seal B", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Adventure CT Seal C", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Dungeon Masters3 CT Seal", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "LadyDevimon", statType: "CT", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Birdramon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "DeadlyAxemon", statType: "CT", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "[Awakened] Lilithmon (Resistance)", statType: "CT", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+
+            // HT Seals
+            { name: "Fanbeemon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Coredramon(Blue)", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Drimongemon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Dorugamon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Knightmon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Garudamon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Parasimon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Baihumon", statType: "HT", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "LordKnightmon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Craniamon", statType: "HT", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Gabumon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Darktyranomon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "TyrantKabuterimon", statType: "HT", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Witchmon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Floramon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Beelzebumon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "WereGarurumon(Black)", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "GeoGreymon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Rosemon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Crownmon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Hackmon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Marksman Seal", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "MetalGreymon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Apocalymon", statType: "HT", baseValue: 55, maxValues: 550, maxSeals: 3000 },
+            { name: "Exploration Seal", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Belial Vamdemon", statType: "HT", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Antylamon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Blossomon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Brave Seal", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "MangnaDramon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 300 },
+            { name: "Alphamon Ouryuken", statType: "HT", baseValue: 55, maxValues: 550, maxSeals: 200 },
+            { name: "Starmon", statType: "HT", baseValue: 25, maxValues: 250, maxSeals: 1000 },
+            { name: "Paildramon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 700 },
+            { name: "Gryphonmon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 500 },
+            { name: "Duftmon", statType: "HT", baseValue: 40, maxValues: 400, maxSeals: 500 },
+            { name: "Rafflesimon", statType: "HT", baseValue: 45, maxValues: 450, maxSeals: 400 },
+            { name: "Grand Prix Seal", statType: "HT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Tonosama Gekomon Seal", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "PowerDigimon Seal", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "13th Anniversary HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Gammamon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Sprout Seal", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Dungeon Masters HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Season Pass HT Seal", statType: "HT", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "Dungeon Masters2 HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "[Awakening]ZeedMillenniumon", statType: "HT", baseValue: 55, maxValues: 550, maxSeals: 3000 },
+            { name: "Mimi Tachikawa Seal", statType: "HT", baseValue: 60, maxValues: 600, maxSeals: 100 },
+            { name: "MoonMillenniumon", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Shoutmon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Scorching Summer HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Togemon X", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Dynasmon X", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Sleipmon X", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Examon X", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Wolfmon", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Petaldramon", statType: "HT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "JetMervamon", statType: "HT", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Gabumon -Bond of Friendship-", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Autumn HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "16th HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Adventure HT Seal A", statType: "HT", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Adventure HT Seal B", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Adventure HT Seal C", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Dungeon Masters3 HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Wendigomon", statType: "HT", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "SymbareAngoramon", statType: "HT", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Omnimon_ZwartD", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Christmas HT Seal", statType: "HT", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+
+            // HP Seals
+            { name: "V-mon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Soulmon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Xuanwumon", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Tsunomon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Keramon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Gazimon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Gardromon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Centalmon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "SkullSatamon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "DexDoruGreymon", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Sinduramon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "UlforceVeedramon", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Reptiledramon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Raremon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Omegamon Alter-S", statType: "HP", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "WarGreymon", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Ikkakumon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Lucemon: Wild 2nd Mode", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "ShineGreymon BurstMode", statType: "HP", baseValue: 55, maxValues: 550, maxSeals: 3000 },
+            { name: "Gaomon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "SunFlowmon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "BanchoLeomon", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Grow Well", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Whamon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "MetalSeadramon", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Garurumon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Ogremon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Sakuyamon", statType: "HP", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Sincerity Seal", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Angewomon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 500 },
+            { name: "Cherubimon White", statType: "HP", baseValue: 45, maxValues: 450, maxSeals: 300 },
+            { name: "Valdurmon", statType: "HP", baseValue: 40, maxValues: 400, maxSeals: 300 },
+            { name: "Susanoomon", statType: "HP", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "Kokuwamon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 1000 },
+            { name: "Seadramon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 1000 },
+            { name: "Pumpkinmon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 700 },
+            { name: "Boltmon", statType: "HP", baseValue: 40, maxValues: 400, maxSeals: 500 },
+            { name: "Seal of Heat", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Dokunemon Seal", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Roachmon Seal", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Otamamon Seal", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "13th Anniversary HP Seal", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Canoweissmon", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Dungeon Masters HP Seal", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Season Pass HP Seal", statType: "HP", baseValue: 100, maxValues: 1000, maxSeals: 3000 },
+            { name: "Dungeon Masters2 HP Seal", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Lucemon: Chaos Mode", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "MailBirdramon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "[Awakening]Dukemon Crimson Mode", statType: "HP", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "Tigervespamon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Megidramon X", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Tamer Seal:Matt", statType: "HP", baseValue: 50, maxValues: 500, maxSeals: 100 },
+            { name: "Blizzarmon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Sefirotmon", statType: "HP", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Ophanimon Falldown Mode", statType: "HP", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Sweet! 16th Anniversary Cake Seal", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "16th HP Seal", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Adventure HP Seal A", statType: "HP", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Adventure HP Seal B", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Adventure HP Seal C", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Dungeon Masters3 HP Seal", statType: "HP", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Groundramon", statType: "HP", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+
+            // DS Seals
+            { name: "Diablomon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Agumon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Coredramon(Green)", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Zhuqiaomon", statType: "DS", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "DemiMeramon", statType: "DS", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Candlemon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Woodmon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "SkullGreymon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Asuramon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "WereGarurumon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Toy Agumon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Dorumon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Gesomon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Kabuterimon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Yukidarumon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Mikemon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Piyomon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Puppetmon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "MachGaogamon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Peckmon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Heat Wave Seal", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Angemon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Piedmon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Gawappamon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Happiness Seal", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "GrandisKuwagamon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 3000 },
+            { name: "Gladimon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Kudamon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 700 },
+            { name: "Tyilinmon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 500 },
+            { name: "Anubimon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 300 },
+            { name: "Beginning Seal", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Psychemon", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 1000 },
+            { name: "Wizardmon", statType: "DS", baseValue: 35, maxValues: 350, maxSeals: 1000 },
+            { name: "Toucanmon", statType: "DS", baseValue: 35, maxValues: 350, maxSeals: 1000 },
+            { name: "Taomon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 700 },
+            { name: "Lotusmon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 500 },
+            { name: "Plesiomon", statType: "DS", baseValue: 50, maxValues: 500, maxSeals: 500 },
+            { name: "Gekomon Seal", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Betamon Seal", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Bakemon Seal", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "13th Anniversary DS Seal", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Baalmon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "Dungeon Masters DS Seal", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Season Pass DS Seal", statType: "DS", baseValue: 150, maxValues: 1500, maxSeals: 3000 },
+            { name: "Dungeon Masters2 DS Seal", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "GulusGammamon", statType: "DS", baseValue: 40, maxValues: 400, maxSeals: 3000 },
+            { name: "[Awakening]Susanoomon", statType: "DS", baseValue: 60, maxValues: 600, maxSeals: 3000 },
+            { name: "Lillymon X", statType: "DS", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Rosemon X", statType: "DS", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Lilithmon X", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Demon X", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Fairymon", statType: "DS", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Ranamon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "MarineAngemon", statType: "DS", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "16th DS Seal", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Adventure DS Seal A", statType: "DS", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Adventure DS Seal B", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Adventure DS Seal C", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Dungeon Masters3 DS Seal", statType: "DS", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Eosmon (Perfect)", statType: "DS", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "TeslaJellymon", statType: "DS", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+
+            // DE Seals
+            { name: "Goblimon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Leomon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Upamon", statType: "DE", baseValue: 8, maxValues: 80, maxSeals: 3000 },
+            { name: "Renamon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Elecmon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Flymon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Meramon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Meteomon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Chimairamon", statType: "DE", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "WaruMonzaemon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Sleipmon", statType: "DE", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Rockmon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Monochromon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Metaltyranomon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Kamemon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Ankylomon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Shakomon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Shellmon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Palmon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "HerculesKabuterimon", statType: "DE", baseValue: 25, maxValues: 250, maxSeals: 3000 },
+            { name: "Thunderballmon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "BaoHackmon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Salamon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Armor Seal", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "PawnChessmon W", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Labramon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 700 },
+            { name: "JewelBeemon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 500 },
+            { name: "Seraphimon", statType: "DE", baseValue: 25, maxValues: 250, maxSeals: 300 },
+            { name: "Gotsumon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 1000 },
+            { name: "Icemon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 1000 },
+            { name: "Flybeemon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 1000 },
+            { name: "SuperStarmon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 700 },
+            { name: "OmegaShoutmon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 700 },
+            { name: "JumboGamemon", statType: "DE", baseValue: 25, maxValues: 250, maxSeals: 500 },
+            { name: "ShoutmonDX", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 400 },
+            { name: "Mojyamon Seal", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "13th Anniversary DE Seal", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "WezenGammamon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Dungeon Masters DE Seal", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Season Pass DE Seal", statType: "DE", baseValue: 70, maxValues: 700, maxSeals: 3000 },
+            { name: "Dungeon Masters2 DE Seal", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "BloomLordmon", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "[Awakening]Dukemon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Diarbbitmon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "MetalGreymon X", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Duftmon X", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "LordKnightmon X", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Chaosdramon X", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Garmmon", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Blitzmon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Calamaramon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "KaiserLeomon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "16th DE Seal", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Adventure DE Seal A", statType: "DE", baseValue: 10, maxValues: 100, maxSeals: 3000 },
+            { name: "Adventure DE Seal B", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Adventure DE Seal C", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Dungeon Masters3 DE Seal", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+            { name: "Okuwamon", statType: "DE", baseValue: 15, maxValues: 150, maxSeals: 3000 },
+            { name: "Dokugumon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Dorulumon", statType: "DE", baseValue: 20, maxValues: 200, maxSeals: 3000 },
+            { name: "Christmas DE Seal", statType: "DE", baseValue: 30, maxValues: 300, maxSeals: 3000 },
+
+            // BL Seals
+            { name: "Etemon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Tentomon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Dracmon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Waspmon", statType: "BL", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Sangloupmon", statType: "BL", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Vikaralamon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "MegaSeadramon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Fanglongmon", statType: "BL", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "TankDramon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Agumon(S)", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "ShineGreymon", statType: "BL", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "Lilamon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Falcomon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Gabumon(Black)", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Firm Seal", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Gomamon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Shakkoumon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Gallantmon Crimson Mode", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Friendship Seal", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Ophanimon", statType: "BL", baseValue: 0.25, maxValues: 2.5, maxSeals: 300 },
+            { name: "Alphamon Ouryuken (Awaken)", statType: "BL", baseValue: 0.35, maxValues: 3.5, maxSeals: 150 },
+            { name: "Doggymon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 1000 },
+            { name: "SkullMeramon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 700 },
+            { name: "Z'dGarurumon", statType: "BL", baseValue: 0.25, maxValues: 2.5, maxSeals: 500 },
+            { name: "MagnaGarurumon", statType: "BL", baseValue: 0.25, maxValues: 2.5, maxSeals: 500 },
+            { name: "Shoutmon X7:superiormode", statType: "BL", baseValue: 0.5, maxValues: 5, maxSeals: 50 },
+            { name: "Seal of Spring", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "13th Anniversary BL Seal", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Angoramon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Dungeon Masters BL Seal", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Vampiric Seal", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Season Pass BL Seal", statType: "BL", baseValue: 0.7, maxValues: 7, maxSeals: 3000 },
+            { name: "Dungeon Masters2 BL Seal", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "XrosUp Mervamon", statType: "BL", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "[Awakening]Sakuyamon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Amphimon", statType: "BL", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Gallantmon X", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Barbamon X", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Bolgmon", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Mercurymon", statType: "BL", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Arbormon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Loewemon", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "16th BL Seal", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Adventure BL Seal A", statType: "BL", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Adventure BL Seal B", statType: "BL", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Adventure BL Seal C", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Dungeon Masters3 BL Seal", statType: "BL", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "ANOMALOCARIMON", statType: "BL", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Ballistamon", statType: "BL", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+
+            // EV Seals
+            { name: "Lillymon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Impmon", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Armadimon", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Digmon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Veedramon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Mystimon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "NeoDevimon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Dynasmon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "DexDorugoramon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "Gatomon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Allomon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Growmon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Bokomon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "Yaksamon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Blackgatomon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Rapidmon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "MirageGaogamon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "Rosemon Burst Mode", statType: "EV", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "Ravemon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "SaviorHackmon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Seal of Coolness", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "MegaKabuterimon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Marsmon", statType: "EV", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "Hagurumon", statType: "EV", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Knowledge Seal", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Reppamon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 700 },
+            { name: "Justimon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 300 },
+            { name: "Mastemon", statType: "EV", baseValue: 0.45, maxValues: 4.5, maxSeals: 3000 },
+            { name: "Lopmon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 1000 },
+            { name: "Jellymon", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 1000 },
+            { name: "Holsmon", statType: "EV", baseValue: 0.25, maxValues: 2.5, maxSeals: 1000 },
+            { name: "Family Seal", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "13th Anniversary EV Seal", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Bastemon", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Dungeon Masters EV Seal", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Season Pass EV Seal", statType: "EV", baseValue: 0.7, maxValues: 7, maxSeals: 3000 },
+            { name: "Dungeon Masters2 EV Seal", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Armagemon", statType: "EV", baseValue: 0.4, maxValues: 4, maxSeals: 3000 },
+            { name: "[Awakening]SaintGalgomon", statType: "EV", baseValue: 0.35, maxValues: 3.5, maxSeals: 3000 },
+            { name: "WereGarurumon X", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Beelzebumon X", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Shutumon", statType: "EV", baseValue: 0.15, maxValues: 1.5, maxSeals: 3000 },
+            { name: "Mervamon", statType: "EV", baseValue: 0.25, maxValues: 2.5, maxSeals: 3000 },
+            { name: "16th Anniversary EV Seal", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Adventure EV Seal A", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+            { name: "Adventure EV Seal B", statType: "EV", baseValue: 0.2, maxValues: 2, maxSeals: 3000 },
+            { name: "Adventure EV Seal C", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "Dungeon Masters3 EV Seal", statType: "EV", baseValue: 0.3, maxValues: 3, maxSeals: 3000 },
+            { name: "MetalEtemon", statType: "EV", baseValue: 0.1, maxValues: 1, maxSeals: 3000 },
+
+        ];
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        // --- UTILS ---
+        const getTierIndex = (count) => {
+            for (let i = TIERS.length - 1; i >= 0; i--) {
+                if (count >= TIERS[i].threshold) return i;
+            }
+            return 0;
+        };
+
+        const calculateCurrentStat = (seal, count) => {
+            if (count === 0) return 0;
+            const currentTier = TIERS[getTierIndex(count)];
+            return (seal.maxValues * currentTier.percent) / 100;
+        };
+
+        // Removed calculateEfficiency logic
+
+        const formatCurrency = (bits) => {
+            if (!bits) return '0 B';
+            let str = '';
+            const t = Math.floor(bits / 1000000);
+            const m = Math.floor((bits % 1000000) / 1000);
+            const b = bits % 1000;
+            if (t > 0) str += `${t}T `;
+            if (m > 0 || (t > 0 && b > 0)) str += `${m}M `;
+            if (b > 0) str += `${b}B`;
+            return str.trim() || '0 B';
+        };
+
+        // --- COMPONENTS ---
+        const { useState, useEffect, useMemo } = React;
+
+        const filters = ['ALL', 'AT', 'CT', 'HT', 'HP', 'DS', 'DE', 'BL', 'EV'];
+
+        const statColors = {
+            'ALL': 'text-slate-400',
+            'AT': 'text-cyan-400',
+            'CT': 'text-orange-500',
+            'HT': 'text-lime-500',
+            'HP': 'text-red-500',
+            'DS': 'text-teal-500',
+            'DE': 'text-amber-500',
+            'BL': 'text-slate-500',
+            'EV': 'text-green-500'
+        };
+
+        const CurrencyInput = ({ value, onChange, compact = false }) => {
+            const val = value || 0;
+            const t = Math.floor(val / 1000000) || '';
+            const m = Math.floor((val % 1000000) / 1000) || '';
+            const b = val % 1000 || '';
+
+            const handleChange = (type, inputVal) => {
+                let num = parseInt(inputVal) || 0;
+                let curT = type === 'T' ? num : Math.floor(val / 1000000);
+                let curM = type === 'M' ? num : Math.floor((val % 1000000) / 1000);
+                let curB = type === 'B' ? num : val % 1000;
+                onChange((curT * 1000000) + (curM * 1000) + curB);
+            };
+
+            const inputClass = `bg-dark-bg border border-dark-border text-right rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent font-mono transition-colors text-white ${compact ? 'w-8 text-[10px] py-0.5 px-0.5' : 'w-[42px] text-xs py-1 px-1'}`;
+
+            return (
+                <div className="flex items-center gap-0.5">
+                    <input type="number" min="0" placeholder="0" className={inputClass} value={t} onChange={e => handleChange('T', e.target.value)} />
+                    <span className={`font-bold text-yellow-500 ${compact ? 'text-[9px] mr-1' : 'text-[11px] mr-1'}`}>T</span>
+                    <input type="number" min="0" max="999" placeholder="0" className={inputClass} value={m} onChange={e => handleChange('M', e.target.value)} />
+                    <span className={`font-bold text-slate-300 ${compact ? 'text-[9px] mr-1' : 'text-[11px] mr-1'}`}>M</span>
+                    <input type="number" min="0" max="999" placeholder="0" className={inputClass} value={b} onChange={e => handleChange('B', e.target.value)} />
+                    <span className={`font-bold text-[#b45f06] ${compact ? 'text-[9px]' : 'text-[11px]'}`}>B</span>
+                </div>
+            );
+        };
+
+        const SealCard = ({ seal, count, price, onCountChange, onPriceChange }) => {
+            const currentTierIndex = getTierIndex(count);
+            const currentTier = TIERS[currentTierIndex];
+            const currentStat = calculateCurrentStat(seal, count);
+            const isPercent = ["CT", "EV", "BL"].includes(seal.statType); 
+
+            return (
+                <div className="bg-dark-card border border-dark-border rounded-xl p-5 shadow-lg hover:shadow-xl hover:border-primary/50 transition duration-300 flex flex-col gap-3 group">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h3 className="font-bold text-lg text-white drop-shadow-sm">{seal.name}</h3>
+                            <span className="text-xs text-gray-400 font-medium inline-block bg-dark-cardHover px-2 py-0.5 rounded-full mt-1">Tier: {currentTier.name}</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-primary font-bold text-xl drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">+{isPercent ? currentStat.toFixed(2) + '%' : Math.round(currentStat)}</span>
+                            <span className="block text-xs text-slate-500 font-bold tracking-widest">{seal.statType}</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block inline-block w-16">Qty</span>
+                            <div className="flex items-center gap-1">
+                                <input 
+                                    type="number" 
+                                    className="bg-dark-bg text-white border border-dark-border text-right rounded px-2 py-1.5 w-20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-mono font-bold"
+                                    value={count}
+                                    onChange={(e) => onCountChange(seal.name, Math.max(0, Math.min(parseInt(e.target.value) || 0, seal.maxSeals)))}
+                                />
+                                <span className="text-xs text-slate-500 w-8">/ {seal.maxSeals}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider block inline-block w-12">Price</span>
+                            <CurrencyInput value={price} onChange={(val) => onPriceChange(seal.name, val)} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SidebarForm = ({ isOpen, onClose, userSeals, sealPrices, onCountChange, onPriceChange, sealDatabase }) => {
+            if (!isOpen) return null;
+
+            // Group seals by statType
+            const sealsByType = useMemo(() => {
+                return sealDatabase.reduce((acc, seal) => {
+                    if (!acc[seal.statType]) acc[seal.statType] = [];
+                    acc[seal.statType].push(seal);
+                    return acc;
+                }, {});
+            }, [sealDatabase]);
+
+            return (
+                <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
+                    <div className="w-full max-w-md bg-dark-bg h-full shadow-2xl overflow-y-auto border-l border-dark-border flex flex-col animate-[slideIn_0.3s_ease-out]">
+                        <div className="p-6 flex justify-between items-center border-b border-dark-border bg-dark-card sticky top-0 z-10 shadow-sm">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                                Mass Update
+                            </h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 rounded-full hover:bg-dark-cardHover">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div className="p-6 flex-1 overflow-y-auto style-scrollbar">
+                            {filters.filter(f => f !== 'ALL' && sealsByType[f]).map(statType => {
+                                const seals = sealsByType[statType];
+                                return (
+                                <div key={statType} className="mb-8 last:mb-2">
+                                    <h3 className={`text-lg font-bold mb-4 border-b border-dark-border pb-2 sticky top-[-1.5rem] bg-dark-bg z-10 ${statColors[statType]}`}>{statType} Seals</h3>
+                                    <div className="space-y-2">
+                                        {seals.map(seal => (
+                                            <div key={seal.name} className="flex justify-between items-center group">
+                                                <label className="text-sm font-medium text-slate-300 w-1/3 truncate pr-2 group-hover:text-white transition-colors" title={seal.name}>{seal.name}</label>
+                                                <div className="flex items-center gap-2 w-2/3 justify-end">
+                                                    <div className="flex items-center" title="Price per Seal">
+                                                        <CurrencyInput value={sealPrices[seal.name]} onChange={(val) => onPriceChange(seal.name, val)} compact={true} />
+                                                    </div>
+                                                    <div className="flex items-center" title="Quantity Owned">
+                                                        <input 
+                                                            type="number" 
+                                                            className="bg-dark-card border border-dark-border rounded px-2 py-1 w-16 text-right text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono text-xs transition-colors"
+                                                            value={userSeals[seal.name] || 0}
+                                                            onChange={(e) => onCountChange(seal.name, Math.max(0, Math.min(parseInt(e.target.value) || 0, seal.maxSeals)))}
+                                                        />
+                                                        <span className="text-[10px] text-slate-500 w-8 text-right">/ {seal.maxSeals}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )})}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const OptimizerView = ({ userSeals, sealPrices, sealDatabase }) => {
+            const [selectedStat, setSelectedStat] = useState('AT');
+            const [targetStat, setTargetStat] = useState(1000);
+            const [result, setResult] = useState(null);
+
+            const currentStats = useMemo(() => {
+                const stats = { AT: 0, CT: 0, HT: 0, HP: 0, DS: 0, DE: 0, BL: 0, EV: 0 };
+                sealDatabase.forEach(seal => {
+                    const count = userSeals[seal.name] || 0;
+                    if (count > 0) {
+                        stats[seal.statType] += calculateCurrentStat(seal, count);
+                    }
+                });
+                return stats;
+            }, [userSeals, sealDatabase]);
+
+            const calculateOptimal = () => {
+                const sealsOfStat = sealDatabase.filter(s => s.statType === selectedStat);
+                
+                let simSeals = { ...userSeals };
+                let currentStatSum = sealsOfStat.reduce((sum, seal) => sum + calculateCurrentStat(seal, simSeals[seal.name] || 0), 0);
+                
+                let shoppingList = [];
+                let totalCost = 0;
+                let steps = 0;
+                
+                while (currentStatSum < targetStat && steps < 500) {
+                    steps++;
+                    let bestUpgrade = null;
+                    let bestEfficiency = Infinity;
+                    
+                    for (const seal of sealsOfStat) {
+                        const price = sealPrices[seal.name];
+                        if (!price || price <= 0) continue; 
+                        
+                        const currentCount = simSeals[seal.name] || 0;
+                        const currentTierIndex = getTierIndex(currentCount);
+                        const nextTier = TIERS[currentTierIndex + 1];
+                        
+                        if (!nextTier || nextTier.threshold > seal.maxSeals) continue; 
+                        
+                        const costToNext = (nextTier.threshold - currentCount) * price;
+                        const currentStatVal = calculateCurrentStat(seal, currentCount);
+                        const nextStatVal = (seal.maxValues * nextTier.percent) / 100;
+                        const statGain = nextStatVal - currentStatVal;
+                        
+                        if (statGain <= 0) continue;
+                        
+                        const efficiency = costToNext / statGain;
+                        
+                        if (efficiency < bestEfficiency) {
+                            bestEfficiency = efficiency;
+                            bestUpgrade = {
+                                seal,
+                                targetTier: nextTier,
+                                sealsToBuy: nextTier.threshold - currentCount,
+                                cost: costToNext,
+                                statGain: statGain
+                            };
+                        }
+                    }
+                    
+                    if (!bestUpgrade) break; 
+                    
+                    simSeals[bestUpgrade.seal.name] = bestUpgrade.targetTier.threshold;
+                    currentStatSum += bestUpgrade.statGain;
+                    totalCost += bestUpgrade.cost;
+                    
+                    const existingItem = shoppingList.find(i => i.name === bestUpgrade.seal.name);
+                    if (existingItem) {
+                        existingItem.sealsToBuy += bestUpgrade.sealsToBuy;
+                        existingItem.cost += bestUpgrade.cost;
+                        existingItem.targetTier = bestUpgrade.targetTier.name;
+                    } else {
+                        shoppingList.push({
+                            name: bestUpgrade.seal.name,
+                            sealsToBuy: bestUpgrade.sealsToBuy,
+                            cost: bestUpgrade.cost,
+                            targetTier: bestUpgrade.targetTier.name,
+                            price: sealPrices[bestUpgrade.seal.name]
+                        });
+                    }
+                }
+                
+                setResult({
+                    success: currentStatSum >= targetStat,
+                    finalStat: currentStatSum,
+                    totalCost,
+                    shoppingList,
+                    missingStatOption: currentStatSum < targetStat
+                });
+            };
+
+            const isPercent = ["CT", "EV", "BL"].includes(selectedStat);
+
+            return (
+                <div className="w-full bg-dark-card border border-dark-border rounded-xl flex flex-col min-h-[500px] shadow-lg overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+                    <div className="p-6 flex justify-between items-center border-b border-dark-border bg-dark-cardHover/30">
+                        <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent to-yellow-300 flex items-center gap-2">
+                            <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Cost Optimizer
+                        </h2>
+                    </div>
+
+                    <div className="bg-dark-bg/80 px-4 py-3 border-b border-dark-border flex flex-wrap gap-x-4 gap-y-2 justify-center">
+                        {filters.filter(f => f !== 'ALL').map(stat => {
+                            const isPct = ["CT", "EV", "BL"].includes(stat);
+                            const val = currentStats[stat];
+                            const displayVal = isPct ? val.toFixed(2) + '%' : Math.round(val);
+                            return (
+                                <div key={stat} className="flex gap-1.5 items-center bg-dark-card px-2 py-1 rounded shadow-inner border border-dark-border/50 min-w-[80px] justify-center">
+                                    <span className={`font-bold text-xs ${statColors[stat]} drop-shadow-sm`}>{stat}:</span>
+                                    <span className="text-white font-mono text-xs font-bold">+{displayVal}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                        
+                        <div className="p-6 bg-dark-card/50 border-b border-dark-border">
+                            <div className="flex gap-4 items-end">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stat to Optimize</label>
+                                    <select 
+                                        className="w-full bg-dark-bg text-white border border-dark-border rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent font-bold"
+                                        value={selectedStat}
+                                        onChange={(e) => { setSelectedStat(e.target.value); setResult(null); }}
+                                    >
+                                        {['AT', 'HP', 'DS', 'CT', 'HT', 'DE', 'EV', 'BL'].map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Value</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            step="any"
+                                            className="w-full bg-dark-bg text-gray-100 border border-dark-border rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent font-mono font-bold"
+                                            value={targetStat}
+                                            onChange={(e) => { setTargetStat(Number(e.target.value)); setResult(null); }}
+                                        />
+                                        <span className="absolute right-3 top-2.5 text-slate-500 font-bold">{isPercent ? '%' : ''}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={calculateOptimal}
+                                className="w-full mt-5 py-3 bg-gradient-to-r from-accent to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white font-bold rounded-lg shadow-lg hover:shadow-accent/40 transition-all flex justify-center items-center gap-2"
+                            >
+                                Calculate Cheapest Path
+                            </button>
+                        </div>
+
+                        <div className="p-6 flex-1 overflow-y-auto style-scrollbar bg-dark-bg">
+                            {!result && (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center">
+                                    <svg className="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                    <p>Select your target and click calculate to generate your shopping list.</p>
+                                    <p className="text-xs mt-2 text-slate-600 font-medium">Note: Make sure your seal prices are inputted first!</p>
+                                </div>
+                            )}
+                            
+                            {result && (
+                                <div>
+                                    <div className={`p-4 rounded-lg border ${result.success ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'} mb-6`}>
+                                        <h3 className={`text-lg font-bold flex items-center gap-2 ${result.success ? 'text-green-400' : 'text-red-400'} mb-2`}>
+                                            {result.success ? (
+                                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Target Reached!</>
+                                            ) : (
+                                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Cannot fully reach target</>
+                                            )}
+                                        </h3>
+                                        {result.missingStatOption && (
+                                            <p className="text-xs text-red-300/80 mb-3 border-b border-red-500/20 pb-2">We ran out of seal upgrades that have valid prices set. You can only reach this maximum stat.</p>
+                                        )}
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-300">Final Stat: <span className="text-white font-bold ml-1">+{isPercent ? result.finalStat.toFixed(2) + '%' : Math.round(result.finalStat)}</span></span>
+                                            <span className="text-slate-300">Est. Cost: <span className="text-accent font-bold ml-1">{formatCurrency(result.totalCost)}</span></span>
+                                        </div>
+                                    </div>
+
+                                    {result.shoppingList.length > 0 && (
+                                        <>
+                                            <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 pb-2 border-b border-dark-border flex items-center gap-2">
+                                                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                Shopping List
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {result.shoppingList.map((item, i) => (
+                                                    <div key={i} className="bg-dark-bg p-4 rounded-xl border border-dark-border hover:border-accent/40 transition-colors shadow-sm">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="font-bold text-white max-w-[150px] truncate" title={item.name}>{item.name}</span>
+                                                            <span className="text-yellow-400 font-bold text-sm bg-yellow-900/20 px-2 py-0.5 rounded">{formatCurrency(item.cost)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-dark-border border-dashed">
+                                                            <span className="text-slate-400">Buy <span className="text-white font-bold px-1">{item.sealsToBuy}</span> ➔ {item.targetTier}</span>
+                                                            <span className="text-slate-500 font-medium">@ {formatCurrency(item.price)} ea</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('database'); // 'database' | 'optimizer'
+            const [userSeals, setUserSeals] = useState({});
+            const [sealPrices, setSealPrices] = useState({});
+            const [filterStat, setFilterStat] = useState('ALL');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+            useEffect(() => {
+                const handleMouseMove = (e) => {
+                    setMousePos({ x: e.clientX, y: e.clientY });
+                };
+                window.addEventListener('mousemove', handleMouseMove);
+                return () => window.removeEventListener('mousemove', handleMouseMove);
+            }, []);
+
+            useEffect(() => {
+                const savedSeals = localStorage.getItem('dmoSeals');
+                const savedPrices = localStorage.getItem('dmoSealPrices');
+                if (savedSeals) {
+                    try { setUserSeals(JSON.parse(savedSeals)); } catch (e) {}
+                }
+                if (savedPrices) {
+                    try { setSealPrices(JSON.parse(savedPrices)); } catch (e) {}
+                }
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('dmoSeals', JSON.stringify(userSeals));
+                localStorage.setItem('dmoSealPrices', JSON.stringify(sealPrices));
+            }, [userSeals, sealPrices]);
+
+            const handleCountChange = (sealName, newCount) => {
+                setUserSeals(prev => ({ ...prev, [sealName]: newCount }));
+            };
+
+            const handlePriceChange = (sealName, newPrice) => {
+                setSealPrices(prev => ({ ...prev, [sealName]: newPrice }));
+            };
+
+            const processedSeals = useMemo(() => {
+                let filtered = filterStat === 'ALL' 
+                    ? sealDatabase 
+                    : sealDatabase.filter(s => s.statType === filterStat);
+
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+                return filtered;
+            }, [filterStat]);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#0b101e] to-[#020617] text-slate-300 font-sans selection:bg-primary/30 selection:text-white pb-20 relative">
+                    {/* Mouse Halo Effect */}
+                    <div 
+                        className="pointer-events-none fixed inset-0 z-0"
+                        style={{
+                            background: `radial-gradient(800px circle at ${mousePos.x}px ${mousePos.y}px, rgba(59, 130, 246, 0.08), transparent 40%)`
+                        }}
+                    />
+
+                    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
+                        <SidebarForm 
+                            isOpen={isSidebarOpen} 
+                            onClose={() => setIsSidebarOpen(false)} 
+                            userSeals={userSeals} 
+                            sealPrices={sealPrices}
+                            onCountChange={handleCountChange} 
+                            onPriceChange={handlePriceChange}
+                            sealDatabase={sealDatabase}
+                        />
+
+                        {/* Tabs / Header Navigation */}
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 border-b border-dark-border pb-1">
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-300 drop-shadow-sm h-10 w-full mb-1">
+                                DMO Seal Calculator
+                            </h1>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setActiveTab('database')}
+                                className={`px-6 py-3 rounded-t-xl font-bold transition-all duration-200 flex items-center gap-2 border-b-2 ${activeTab === 'database' ? 'text-primary bg-dark-card border-primary/80' : 'text-slate-400 border-transparent hover:text-white hover:bg-dark-cardHover/50'}`}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Database
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('optimizer')}
+                                className={`px-6 py-3 rounded-t-xl font-bold transition-all duration-200 flex items-center gap-2 border-b-2 ${activeTab === 'optimizer' ? 'text-accent bg-dark-card border-accent/80' : 'text-slate-400 border-transparent hover:text-white hover:bg-dark-cardHover/50'}`}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Optimizer
+                            </button>
+                        </div>
+                    </div>
+
+                    {activeTab === 'database' && (
+                        <div className="animate-[fadeIn_0.3s_ease-out]">
+                            {/* Toolbar */}
+                            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-dark-card p-4 rounded-xl border border-dark-border">
+                                <div className="flex flex-wrap gap-1 w-full md:w-auto bg-dark-bg p-1 rounded-xl shadow-inner border border-dark-border/50">
+                                    {filters.map(filter => (
+                                        <button 
+                                            key={filter}
+                                            onClick={() => setFilterStat(filter)}
+                                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${statColors[filter]} ${
+                                                filterStat === filter 
+                                                    ? 'bg-dark-cardHover shadow-sm drop-shadow-md opacity-100' 
+                                                    : 'hover:bg-white/5 opacity-50 hover:opacity-100'
+                                            }`}
+                                        >
+                                            {filter}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex justify-between md:justify-end gap-4 w-full md:w-auto items-center">
+                                    <span className={`${statColors[filterStat]} font-bold text-sm whitespace-nowrap drop-shadow-sm`}>
+                                        {filterStat} ({processedSeals.length} results)
+                                    </span>
+                                    <button 
+                                        onClick={() => setIsSidebarOpen(true)}
+                                        className="px-4 py-2 bg-dark-bg text-white border border-dark-border hover:bg-dark-cardHover hover:border-primary/50 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap flex items-center gap-2 shadow-sm"
+                                    >
+                                        <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                                        Mass Edit
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Main Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 pb-12">
+                                {processedSeals.map(seal => (
+                                    <SealCard 
+                                        key={seal.name} 
+                                        seal={seal} 
+                                        count={userSeals[seal.name] || 0} 
+                                        price={sealPrices[seal.name] || 0}
+                                        onCountChange={handleCountChange}
+                                        onPriceChange={handlePriceChange}
+                                    />
+                                ))}
+                                
+                                {processedSeals.length === 0 && (
+                                    <div className="col-span-full py-16 text-center text-slate-500 font-medium border-2 border-dashed border-dark-border rounded-xl">
+                                        No seals found for the selected filter.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'optimizer' && (
+                        <OptimizerView
+                            userSeals={userSeals}
+                            sealPrices={sealPrices}
+                            sealDatabase={sealDatabase}
+                        />
+                    )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
