@@ -705,7 +705,8 @@
 
 
         // --- UTILS ---
-        const getTierIndex = (count) => {
+        const getTierIndex = (count, maxSeals = 3000) => {
+            if (count >= maxSeals) return TIERS.length - 1; // Master
             for (let i = TIERS.length - 1; i >= 0; i--) {
                 if (count >= TIERS[i].threshold) return i;
             }
@@ -714,7 +715,8 @@
 
         const calculateCurrentStat = (seal, count) => {
             if (count === 0) return 0;
-            const currentTier = TIERS[getTierIndex(count)];
+            const currentTierIndex = getTierIndex(count, seal.maxSeals);
+            const currentTier = TIERS[currentTierIndex];
             return (seal.maxValues * currentTier.percent) / 100;
         };
 
@@ -778,7 +780,7 @@
         };
 
         const SealCard = ({ seal, count, price, onCountChange, onPriceChange }) => {
-            const currentTierIndex = getTierIndex(count);
+            const currentTierIndex = getTierIndex(count, seal.maxSeals);
             const currentTier = TIERS[currentTierIndex];
             const currentStat = calculateCurrentStat(seal, count);
             const isPercent = ["CT", "EV", "BL"].includes(seal.statType);
@@ -915,7 +917,7 @@
                         if (!price || price <= 0) continue;
 
                         const currentCount = simSeals[seal.name] || 0;
-                        const currentTierIndex = getTierIndex(currentCount);
+                        const currentTierIndex = getTierIndex(currentCount, seal.maxSeals);
                         const nextTier = TIERS[currentTierIndex + 1];
 
                         if (!nextTier || nextTier.threshold > seal.maxSeals) continue;
