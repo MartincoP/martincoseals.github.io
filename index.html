@@ -750,12 +750,12 @@
 
             return (
                 <div className="bg-dark-card border border-dark-border rounded-xl p-5 shadow-lg hover:shadow-xl hover:border-primary/50 transition duration-300 flex flex-col gap-3 group">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h3 className="font-bold text-lg text-white drop-shadow-sm">{seal.name}</h3>
+                    <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                            <h3 className="font-bold text-lg text-white drop-shadow-sm truncate" title={seal.name}>{seal.name}</h3>
                             <span className="text-xs text-gray-400 font-medium inline-block bg-dark-cardHover px-2 py-0.5 rounded-full mt-1">Tier: {currentTier.name}</span>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                             <span className="text-primary font-bold text-xl drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">+{isPercent ? currentStat.toFixed(2) + '%' : Math.round(currentStat)}</span>
                             <span className="block text-xs text-slate-500 font-bold tracking-widest">{seal.statType}</span>
                         </div>
