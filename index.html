@@ -43,9 +43,24 @@
     </script>
     <style>
         body {
-            background-color: #0F172A;
+            background-color: #09090b;
             color: #E2E8F0;
-            /* slate-200 */
+            background-image: 
+                radial-gradient(circle at center, transparent 0%, #09090b 90%),
+                radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px;
+            background-attachment: fixed;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         /* Custom scrollbar for better look */
@@ -87,6 +102,35 @@
             to {
                 transform: translateX(0);
             }
+        }
+
+        @keyframes rainFall {
+            0% {
+                transform: translateY(-20vh);
+                opacity: 0;
+            }
+            15% {
+                opacity: 0.8;
+            }
+            85% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(120vh);
+                opacity: 0;
+            }
+        }
+
+        .rain-drop {
+            position: fixed;
+            width: 1.5px;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, #6366f1, #a855f7, transparent);
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(0.4px);
+            animation: rainFall linear infinite;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
         }
     </style>
 </head>
@@ -1083,7 +1127,15 @@
             const handleLogin = () => {
                 if (!auth) return alert("Firebase is not fully configured. Edit index.html to add your keys.");
                 const provider = new firebase.auth.GoogleAuthProvider();
-                auth.signInWithPopup(provider).catch(e => console.error("Sign-in failed", e));
+                auth.signInWithPopup(provider)
+                    .catch(e => {
+                        console.error("Sign-in failed:", e);
+                        if (e.code === 'auth/unauthorized-domain') {
+                            alert("Login failed: Your domain (martincoseals.github.io) hasn't been added to your Firebase 'Authorized Domains' list yet! Go to Authentication > Settings in your Firebase console to add it.");
+                        } else {
+                            alert("Login failed: " + e.message);
+                        }
+                    });
             };
 
             const handleLogout = () => {
@@ -1108,6 +1160,43 @@
                 if (savedPrices) {
                     try { setSealPrices(JSON.parse(savedPrices)); } catch (e) { }
                 }
+            }, []);
+
+            useEffect(() => {
+                const container = document.getElementById('rain-container');
+                if (!container) return;
+
+                const createDrop = () => {
+                    const drop = document.createElement('div');
+                    drop.className = 'rain-drop';
+                    
+                    const left = Math.random() * 100;
+                    const duration = 1.5 + Math.random() * 2.5; // 1.5s to 4s
+                    const delay = Math.random() * 2;
+                    const sizeMultiplier = 0.5 + Math.random() * 1.5;
+
+                    drop.style.left = `${left}%`;
+                    drop.style.animationDuration = `${duration}s`;
+                    drop.style.animationDelay = `${delay}s`;
+                    drop.style.height = `${80 * sizeMultiplier}px`;
+                    drop.style.opacity = '0';
+
+                    container.appendChild(drop);
+                    
+                    // Clean up after animation finishes
+                    setTimeout(() => {
+                        if (drop.parentNode === container) {
+                            container.removeChild(drop);
+                        }
+                    }, (duration + delay) * 1000);
+                };
+
+                // Create initial burst
+                for(let i=0; i<15; i++) createDrop();
+
+                // Periodically add more
+                const interval = setInterval(createDrop, 400);
+                return () => clearInterval(interval);
             }, []);
 
             useEffect(() => {
@@ -1154,7 +1243,7 @@
             }, [filterStat]);
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#0b101e] to-[#020617] text-slate-300 font-sans selection:bg-primary/30 selection:text-white pb-20 relative">
+                <div className="min-h-screen bg-[#09090b] text-slate-300 font-sans selection:bg-primary/30 selection:text-white pb-20 relative">
                     {/* Mouse Halo Effect */}
                     <div
                         className="pointer-events-none fixed inset-0 z-0"
@@ -1164,6 +1253,8 @@
                     />
 
                     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
+                        {/* Rain Effect Container */}
+                        <div id="rain-container" className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden"></div>
                         <SidebarForm
                             isOpen={isSidebarOpen}
                             onClose={() => setIsSidebarOpen(false)}
