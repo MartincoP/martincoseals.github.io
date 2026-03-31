@@ -96,7 +96,6 @@
 
     <script type="text/babel">
         // --- FIREBASE CONFIGURATION ---
-        // REPLACE THESE VALUES WITH YOUR FIREBASE PROJECT SETTINGS
         const firebaseConfig = {
             apiKey: "AIzaSyAWpRLq7nKy0hjW-jem9vrQFY1C8Ss1d-E",
             authDomain: "sealtool-1c5fe.firebaseapp.com",
@@ -1252,8 +1251,8 @@
                                                 key={filter}
                                                 onClick={() => setFilterStat(filter)}
                                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${statColors[filter]} ${filterStat === filter
-                                                        ? 'bg-dark-cardHover shadow-sm drop-shadow-md opacity-100'
-                                                        : 'hover:bg-white/5 opacity-50 hover:opacity-100'
+                                                    ? 'bg-dark-cardHover shadow-sm drop-shadow-md opacity-100'
+                                                    : 'hover:bg-white/5 opacity-50 hover:opacity-100'
                                                     }`}
                                             >
                                                 {filter}
