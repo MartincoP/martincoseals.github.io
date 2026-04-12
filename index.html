@@ -172,6 +172,8 @@
             console.log("Firebase not initialized yet. Please configure the keys.");
         }
 
+        const ADMIN_UIDS = ['BXLmeqOd9gP9df9MihHXZGYXLup2', 'KCOZ33h3qzaRjS51B6o3meP2dlR2'];
+
         // --- DATA DOMAIN ---
         const TIERS = [
             { name: "Unopened", threshold: 0, percent: 0 },
@@ -949,10 +951,31 @@
             );
         });
 
-        const OptimizerView = React.memo(({ userSeals, sealPrices, sealDatabase, currentStats, openerPrice, setOpenerPrice, openersOwned, setOpenersOwned }) => {
+        const OptimizerView = React.memo(({ userSeals, setUserSeals, sealPrices, sealDatabase, currentStats, openerPrice, setOpenerPrice, openersOwned, setOpenersOwned }) => {
             const [selectedStat, setSelectedStat] = useState('AT');
             const [targetStat, setTargetStat] = useState(1000);
             const [result, setResult] = useState(null);
+
+            const applyPurchases = () => {
+                if (!result || result.shoppingList.length === 0) return;
+                
+                if (!confirm("This will add all seals from the shopping list to your collection and deduct the required seal openers. Continue?")) return;
+
+                let nextSeals = { ...userSeals };
+                result.shoppingList.forEach(item => {
+                    const current = nextSeals[item.name] || 0;
+                    nextSeals[item.name] = current + item.sealsToBuy;
+                });
+                
+                setUserSeals(nextSeals);
+                
+                if (result.totalOpeners > 0) {
+                    setOpenersOwned(Math.max(0, openersOwned - result.totalOpeners));
+                }
+                
+                alert("Collection successfully updated!");
+                setResult(null); // Clear the result after applying
+            };
 
             const calculateOptimal = () => {
                 const sealsOfStat = sealDatabase.filter(s => s.statType === selectedStat);
@@ -1155,6 +1178,14 @@
                                     <div className="flex justify-end text-sm mt-2 pt-2 border-t border-dark-border border-dashed">
                                         <span className="text-slate-300 font-medium">Grand Total Cost: <span className="text-accent font-bold ml-2 text-base">{formatCurrency(result.totalCost + result.totalOpenerCost)}</span></span>
                                     </div>
+                                    {result.shoppingList.length > 0 && (
+                                        <div className="mt-4 flex justify-end">
+                                            <button onClick={applyPurchases} className="bg-green-600/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 font-bold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                Apply Purchase to Collection
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {result.shoppingList.length > 0 && (
@@ -1214,12 +1245,14 @@
             // Firebase Auth State
             const [user, setUser] = useState(null);
             const [isSyncing, setIsSyncing] = useState(false);
+            const [isAdmin, setIsAdmin] = useState(false);
 
             useEffect(() => {
                 if (!auth) return;
                 const unsubscribe = auth.onAuthStateChanged(async (u) => {
                     setUser(u);
                     if (u) {
+                        setIsAdmin(ADMIN_UIDS.includes(u.uid));
                         try {
                             setIsSyncing(true);
                             const docRef = db.collection('users').doc(u.uid);
@@ -1258,6 +1291,43 @@
             const handleLogout = () => {
                 if (auth) auth.signOut();
                 setUser(null);
+                setIsAdmin(false);
+            };
+
+            const fetchGlobalPrices = async () => {
+                if (!db) return alert("Firebase not configured.");
+                if (!confirm("WARNING: This will overwrite ALL of your locally saved seal prices with the current Global Market prices. Are you sure you want to do this?")) return;
+                try {
+                    const docSnap = await db.collection('globalData').doc('marketPrices').get();
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        if (data.prices) setSealPrices(prev => ({ ...prev, ...data.prices }));
+                        if (data.openerPrice) setOpenerPrice(data.openerPrice);
+                        alert("Global market prices loaded!");
+                    } else {
+                        alert("No global prices found yet. Admins still need to set them!");
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch global prices", e);
+                    alert("Failed to fetch global prices.");
+                }
+            };
+
+            const publishGlobalPrices = async () => {
+                if (!db || !isAdmin) return;
+                if (!confirm("This will overwrite the global community prices with your current prices. Are you sure?")) return;
+                try {
+                    await db.collection('globalData').doc('marketPrices').set({
+                        prices: sealPrices,
+                        openerPrice: openerPrice,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedBy: user.uid
+                    }, { merge: true });
+                    alert("Global market prices updated for all users!");
+                } catch (e) {
+                    console.error("Failed to publish global prices", e);
+                    alert("Failed to publish global prices.");
+                }
             };
 
             useEffect(() => {
@@ -1415,6 +1485,20 @@
                                     </button>
                                 </div>
 
+                                {/* Global Price Controls */}
+                                <div className="flex gap-2 items-center">
+                                    <button onClick={fetchGlobalPrices} className="flex items-center gap-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-3 py-2 rounded-lg font-bold text-[11px] sm:text-xs transition-all whitespace-nowrap">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                        Sync Global Prices
+                                    </button>
+                                    {isAdmin && (
+                                        <button onClick={publishGlobalPrices} className="flex items-center gap-1.5 bg-accent/20 hover:bg-accent/40 text-yellow-500 border border-yellow-500/30 px-3 py-2 rounded-lg font-bold text-[11px] sm:text-xs transition-all whitespace-nowrap">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                            [Admin] Publish Prices
+                                        </button>
+                                    )}
+                                </div>
+
                                 {/* Auth Controls */}
                                 <div className="md:border-l md:border-dark-border md:pl-4 min-h-[40px] flex items-center">
                                     {user ? (
@@ -1505,6 +1589,7 @@
                         {activeTab === 'optimizer' && (
                             <OptimizerView
                                 userSeals={userSeals}
+                                setUserSeals={setUserSeals}
                                 sealPrices={sealPrices}
                                 sealDatabase={sealDatabase}
                                 currentStats={currentStats}
