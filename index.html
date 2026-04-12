@@ -1296,14 +1296,35 @@
 
             const fetchGlobalPrices = async () => {
                 if (!db) return alert("Firebase not configured.");
-                if (!confirm("WARNING: This will overwrite ALL of your locally saved seal prices with the current Global Market prices. Are you sure you want to do this?")) return;
+                const category = window.prompt("Which category to SYNC? (Type 'ALL' for every stat, or 'AT', 'HP', 'CT', etc.)", "ALL");
+                if (!category) return;
+                const catUpper = category.toUpperCase();
+
+                if (!confirm(`WARNING: This will overwrite your locally saved prices for [${catUpper}] with the current Global Market prices (prices of 0 will be ignored). Are you sure?`)) return;
                 try {
                     const docSnap = await db.collection('globalData').doc('marketPrices').get();
                     if (docSnap.exists) {
                         const data = docSnap.data();
-                        if (data.prices) setSealPrices(prev => ({ ...prev, ...data.prices }));
-                        if (data.openerPrice) setOpenerPrice(data.openerPrice);
-                        alert("Global market prices loaded!");
+                        
+                        let nextPrices = {};
+                        if (data.prices) {
+                            Object.keys(data.prices).forEach(key => {
+                                const seal = sealDatabase.find(s => s.name === key);
+                                if (catUpper !== 'ALL' && seal && seal.statType !== catUpper) {
+                                    return; // Skip if it doesn't match selected category
+                                }
+                                const incomingPrice = data.prices[key];
+                                if (incomingPrice > 0) {
+                                    nextPrices[key] = incomingPrice;
+                                }
+                            });
+                            setSealPrices(prev => ({ ...prev, ...nextPrices }));
+                        }
+
+                        if (data.openerPrice && catUpper === 'ALL') {
+                            setOpenerPrice(data.openerPrice);
+                        }
+                        alert(`Global market prices loaded for [${catUpper}]!`);
                     } else {
                         alert("No global prices found yet. Admins still need to set them!");
                     }
@@ -1315,15 +1336,36 @@
 
             const publishGlobalPrices = async () => {
                 if (!db || !isAdmin) return;
-                if (!confirm("This will overwrite the global community prices with your current prices. Are you sure?")) return;
+                const category = window.prompt("Which category to PUBLISH? (Type 'ALL' for every stat, or 'AT', 'HP', 'CT', etc.)", "ALL");
+                if (!category) return;
+                const catUpper = category.toUpperCase();
+
+                if (!confirm(`This will overwrite the global community prices for [${catUpper}] with your current prices. Are you sure?`)) return;
                 try {
+                    const docSnap = await db.collection('globalData').doc('marketPrices').get();
+                    let currentGlobalPrices = {};
+                    if (docSnap.exists) {
+                        currentGlobalPrices = docSnap.data().prices || {};
+                    }
+
+                    let newGlobalPrices = { ...currentGlobalPrices };
+                    Object.keys(sealPrices).forEach(key => {
+                        const seal = sealDatabase.find(s => s.name === key);
+                        if (catUpper !== 'ALL' && seal && seal.statType !== catUpper) {
+                            return; 
+                        }
+                        
+                        const myPrice = sealPrices[key];
+                        newGlobalPrices[key] = myPrice || 0;
+                    });
+
                     await db.collection('globalData').doc('marketPrices').set({
-                        prices: sealPrices,
-                        openerPrice: openerPrice,
+                        prices: newGlobalPrices,
+                        ...(catUpper === 'ALL' && { openerPrice: openerPrice }),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedBy: user.uid
                     }, { merge: true });
-                    alert("Global market prices updated for all users!");
+                    alert(`Global market prices updated for [${catUpper}]!`);
                 } catch (e) {
                     console.error("Failed to publish global prices", e);
                     alert("Failed to publish global prices.");
