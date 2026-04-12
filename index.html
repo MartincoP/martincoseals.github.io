@@ -1367,7 +1367,6 @@
                     ? sealDatabase
                     : sealDatabase.filter(s => s.statType === filterStat);
 
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
                 return filtered;
             }, [filterStat]);
 
